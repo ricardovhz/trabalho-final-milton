@@ -1,0 +1,1 @@
+java -classpath /home/ricardo/.m2/repository/com/github/wendykierp/JTransforms/3.0/JTransforms-3.0.jar:/home/ricardo/.m2/repository/pl/edu/icm/JLargeArrays/1.2/JLargeArrays-1.2.jar:./:bin/ br.com.vanhoz.ricardo.trabalho.milton.main.TestTrainNet
