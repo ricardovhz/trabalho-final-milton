@@ -73,10 +73,11 @@ public class TestAnalyzeAudio {
 	
 				int i=0;
 				for (AnalysisResult ar : result) {
+					System.out.println(ar);
 					if (j==0) {
 						registries.add(new BaseDAO.Registry(ar.getFrequency(), ar.getValue(), i, id));
 					} else {
-						Registry rg = registries.get(j);
+						Registry rg = registries.get(i);
 						rg.setFrequency(rg.getFrequency()+ar.getFrequency());
 						rg.setValue(rg.getValue()+ar.getValue());
 					}

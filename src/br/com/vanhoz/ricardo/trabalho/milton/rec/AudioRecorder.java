@@ -149,7 +149,7 @@ public class AudioRecorder {
 		
 	}
 	
-	public void captureFromFile(String file) {
+	public void captureFromFile(String file) throws IOException {
 		try {
 			AudioInputStream is = AudioSystem.getAudioInputStream(format, AudioSystem.getAudioInputStream(new File(file)));
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -161,7 +161,7 @@ public class AudioRecorder {
 			baos.close();
 			is.close();
 			capturedAudio = baos.toByteArray();
-		} catch (UnsupportedAudioFileException | IOException e) {
+		} catch (UnsupportedAudioFileException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

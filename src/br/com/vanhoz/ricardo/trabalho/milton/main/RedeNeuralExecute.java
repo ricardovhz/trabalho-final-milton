@@ -22,10 +22,11 @@ public class RedeNeuralExecute {
 	
 	public double getIdFromCapture() {
 		try {
-			final String PATH="/tmp/audio.wav";
+//			final String PATH="/tmp/audio.wav";
 			AudioRecorder ar = new AudioRecorder();
-			ar.capture(2000);
-			ar.saveDataToWAV(PATH);
+//			ar.capture(2000);
+//			ar.saveDataToWAV(PATH);
+			ar.captureFromFile("ricardo-out.wav"); 
 			
 			SoundAnalyzer analyzer = new SoundAnalyzer(ar.getCapturedAudio());
 			List<AnalysisResult> results = analyzer.getFirstBiggestResults(5);
