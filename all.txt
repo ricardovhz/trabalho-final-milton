@@ -1,0 +1,2250 @@
+./br/com/vanhoz/ricardo/trabalho/milton/neural/FuncaoNada.java
+./br/com/vanhoz/ricardo/trabalho/milton/neural/Neuronio.java
+./br/com/vanhoz/ricardo/trabalho/milton/neural/Funcao.java
+./br/com/vanhoz/ricardo/trabalho/milton/neural/EntradaComPeso.java
+./br/com/vanhoz/ricardo/trabalho/milton/neural/EntradaSimples.java
+./br/com/vanhoz/ricardo/trabalho/milton/neural/FuncaoSigmoide.java
+./br/com/vanhoz/ricardo/trabalho/milton/neural/Entrada.java
+./br/com/vanhoz/ricardo/trabalho/milton/neural/Linha.java
+./br/com/vanhoz/ricardo/trabalho/milton/neural/train/TreinadorRede.java
+./br/com/vanhoz/ricardo/trabalho/milton/neural/Rede.java
+./br/com/vanhoz/ricardo/trabalho/milton/data/BaseDAO.java
+./br/com/vanhoz/ricardo/trabalho/milton/data/PesosDAO.java
+./br/com/vanhoz/ricardo/trabalho/milton/main/AnalysisResult.java
+./br/com/vanhoz/ricardo/trabalho/milton/main/Utils.java
+./br/com/vanhoz/ricardo/trabalho/milton/main/TestTrainNet.java
+./br/com/vanhoz/ricardo/trabalho/milton/main/SoundAnalyzer.java
+./br/com/vanhoz/ricardo/trabalho/milton/main/TestAnalyzeAudio.java
+./br/com/vanhoz/ricardo/trabalho/milton/main/RedeNeuralExecute.java
+./br/com/vanhoz/ricardo/trabalho/milton/tela/Logger.java
+./br/com/vanhoz/ricardo/trabalho/milton/tela/Main.java
+./br/com/vanhoz/ricardo/trabalho/milton/rec/AudioRecorder.java
+package br.com.vanhoz.ricardo.trabalho.milton.neural;
+
+public class FuncaoNada implements Funcao {
+
+	@Override
+	public double calcular(double valor) {
+		return valor;
+	}
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.neural;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Neuronio {
+
+	List<Entrada> entradas;
+	Funcao funcao;
+	boolean bias;
+
+	public Neuronio(Funcao funcao) {
+		this.entradas = new ArrayList<Entrada>();
+		this.funcao = funcao;
+	}
+
+	public Neuronio(List<Entrada> entradas, Funcao funcao) {
+		this(funcao);
+		this.entradas = entradas;
+	}
+
+	public boolean isBias() {
+		return bias;
+	}
+
+	public void setBias(boolean bias) {
+		this.bias = bias;
+	}
+
+	public double saida() {
+		if (bias)
+			return 1.0D;
+		else
+			return funcao.calcular(sum());
+	}
+
+	private double sum() {
+		return entradas.parallelStream().map(Entrada::getValorReal)
+				.reduce((t, u) -> (t + u)).get();
+	}
+
+	public List<Entrada> getEntradas() {
+		return entradas;
+	}
+
+	public void addEntrada(Entrada entrada) {
+		this.entradas.add(entrada);
+	}
+
+	public Funcao getFuncao() {
+		return funcao;
+	}
+
+	public void setFuncao(Funcao funcao) {
+		this.funcao = funcao;
+	}
+
+	@Override
+	public String toString() {
+		return "Neuronio [entradas=" + entradas + ", funcao=" + funcao
+				+ ", bias=" + bias + "]";
+	}
+	
+	public void removeEntradas() {
+		this.entradas.clear();
+	}
+	
+	public Entrada getEntradaAt(int index) {
+		if (index >= 0 && index < entradas.size()) {
+			return entradas.get(index);
+		}
+		return null;
+	}
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.neural;
+
+public interface Funcao {
+	double calcular(double valor);
+}
+package br.com.vanhoz.ricardo.trabalho.milton.neural;
+
+
+public class EntradaComPeso extends EntradaSimples {
+	double peso;
+	double variacao;
+	Neuronio neuronio;
+
+	public EntradaComPeso(double valor, double peso, Neuronio neuronio) {
+		super(valor);
+		this.peso = peso;
+		this.neuronio = neuronio;
+	}
+
+	@Override
+	public double getValorReal() {
+		return valor * peso;
+	}
+
+	public Neuronio getNeuronio() {
+		return neuronio;
+	}
+
+	public double getPeso() {
+		return peso;
+	}
+
+	public void setPeso(double peso) {
+		this.peso = peso;
+	}
+
+	public double getVariacao() {
+		return variacao;
+	}
+
+	public void setVariacao(double variacao) {
+		this.variacao = variacao;
+	}
+
+	@Override
+	public String toString() {
+		return "EntradaComPeso [peso=" + peso + ", neuronio=" + neuronio
+				+ ", valor=" + valor + "]";
+	}
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.neural;
+
+public class EntradaSimples implements Entrada {
+
+	protected double valor;
+
+	public EntradaSimples(double valor) {
+		super();
+		this.valor = valor;
+	}
+
+	@Override
+	public double getValorReal() {
+		return valor;
+	}
+
+	@Override
+	public double getValor() {
+		return valor;
+	}
+
+	public void setValor(double valor) {
+		this.valor = valor;
+	}
+
+	@Override
+	public String toString() {
+		return "EntradaSimples [valor=" + valor + "]";
+	}
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.neural;
+
+public class FuncaoSigmoide implements Funcao {
+
+	@Override
+	public double calcular(double valor) {
+		return 1.0D/(1.0D + Math.exp(valor*(-1)));
+	}
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.neural;
+
+public interface Entrada {
+	double getValorReal();
+	double getValor();
+}
+package br.com.vanhoz.ricardo.trabalho.milton.neural;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Linha {
+	private List<Neuronio> neuronios;
+	private boolean bias;
+	private Linha ant;
+
+	public Linha(int neuronios, Funcao funcao) {
+		this(neuronios, funcao, false);
+	}
+
+	public Linha(int neuronios, Funcao funcao, boolean bias) {
+		this.neuronios = new ArrayList<Neuronio>();
+		for (int i = 0; i < neuronios; i++) {
+			this.neuronios.add(new Neuronio(funcao));
+		}
+
+		if (bias) {
+			Neuronio neuronioBias = new Neuronio(new FuncaoNada());
+			neuronioBias.setBias(true);
+			this.neuronios.add(neuronioBias);
+		}
+	}
+
+	public Linha(List<Neuronio> neuronios) {
+		super();
+		this.neuronios = neuronios;
+	}
+
+	public List<Neuronio> getNeuronios() {
+		return neuronios;
+	}
+
+	public boolean isBias() {
+		return bias;
+	}
+
+	public void setBias(boolean bias) {
+		this.bias = bias;
+	}
+	
+	public void setEntradaToNeuronio(int neuronioIndex, Entrada entrada) {
+		Neuronio n = neuronios.get(neuronioIndex);
+		Entrada e = n.getEntradaAt(0);
+		if (e != null) {
+			n.getEntradas().set(0, entrada);
+		} else {
+			addEntradaToNeuronio(neuronioIndex, entrada);
+		}
+	}
+
+	public void addEntradaToNeuronio(int neuronioIndex, Entrada entrada) {
+		if (neuronioIndex >= neuronios.size()) {
+			throw new RuntimeException("Neuronio index > size");
+		}
+		neuronios.get(neuronioIndex).addEntrada(entrada);
+	}
+
+	public int sizeWithouBias() {
+		int count = 0;
+		for (Neuronio n : neuronios) {
+			if (!n.isBias()) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	@Override
+	public String toString() {
+		return "Linha [neuronios=" + neuronios + ", bias=" + bias + "]";
+	}
+
+	public String getStringValue() {
+		StringBuilder sb = new StringBuilder();
+		for (Neuronio n : neuronios) {
+			BigDecimal bd = new BigDecimal(n.saida()).setScale(0,
+					BigDecimal.ROUND_UP);
+			sb.append(bd.intValue());
+		}
+		return sb.toString();
+	}
+
+	public double[] getDoubleValues() {
+		double[] result = new double[neuronios.size()];
+		for (int i = 0; i < neuronios.size(); i++) {
+			result[i] = neuronios.get(i).saida();
+		}
+		return result;
+	}
+
+	public Linha getAnt() {
+		return ant;
+	}
+
+	public void setAnt(Linha ant) {
+		this.ant = ant;
+	}
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.neural.train;
+
+import br.com.vanhoz.ricardo.trabalho.milton.neural.Entrada;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.EntradaComPeso;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.EntradaSimples;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.Linha;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.Neuronio;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.Rede;
+import br.com.vanhoz.ricardo.trabalho.milton.tela.Logger;
+
+public class TreinadorRede {
+
+	public static Boolean DEBUG=Boolean.FALSE;
+	private static final double ALFA = 0.5D;
+	
+	private Rede rede;
+	private double[][] pesos;
+        
+        private Logger logger;
+
+       	public TreinadorRede(Logger logger, int linhas, double[][] pesos, int... neuroniosLinha) {
+            this(linhas, pesos, neuroniosLinha);
+            this.logger = logger;
+        }
+
+	public TreinadorRede(int linhas, double[][] pesos, int... neuroniosLinha) {
+		this.rede = new Rede(linhas, neuroniosLinha);
+		this.pesos = pesos;
+		randomize();
+		rede.loadPesos(this.pesos);
+	}
+	
+	public double[][] train(double[][] e) {
+		return train(e, 1000);
+	}
+	
+	public double[][] train(double[][] e, int iteracoes) {
+		for (int i=0;i<iteracoes;i++) {
+			double err = 0.0D;
+			Double backPropTime=0.0D;
+			
+			TicTac tc = new TicTac();
+			tc.start();
+			for (int j=0;j<1000;j++) {
+				int cs=(int)(Math.random() * 1000.0D) % e.length;
+				err += train(e[cs], backPropTime);
+//				rede.updatePesos();
+				pesos = rede.getPesos();
+			}
+			tc.stop();
+			if (DEBUG) {
+                            if (logger != null) {
+				logger.log("Tempo decorrido na iteração de 1000 processos: "+tc.getTime()+"ms");
+				logger.log("Tempo decorrido na iteração de 1000 backpropagation: "+backPropTime+"ms");
+                            }
+			}
+                        if (logger != null)
+                            logger.log(String.valueOf(err));
+		}
+		rede.updatePesos();
+		return rede.getPesos();
+	}
+	
+	private double train(double[] e, Double backPropTime) {
+		int numeroNeuronioSaida = rede.getNumeroNeuroniosSaida();
+		double[] en = new double[e.length-numeroNeuronioSaida];
+		double[] t = new double[numeroNeuronioSaida];
+		System.arraycopy(e, 0, en, 0, e.length - numeroNeuronioSaida);
+		System.arraycopy(e, e.length-numeroNeuronioSaida, t, 0, numeroNeuronioSaida);
+		for (int i=0;i<en.length;i++) {
+			rede.setValoresEntradas(i, new EntradaSimples(en[i]));
+		}
+		Linha result = rede.getResult();
+		
+		double err = 0.0D;
+		for (int i=0;i<result.sizeWithouBias();i++) {
+			double saida = result.getNeuronios().get(i).saida();
+			err += (t[i] - saida) * (t[i] - saida);
+		}
+		backPropagation(t, result, backPropTime);
+		return err;
+	}
+	
+	private void backPropagation(double[] t, Linha linha, Double time) {
+		Linha cur = linha, ant=null;
+		boolean isSaida = true;
+		double[] dAnt = null;
+		
+		TicTac tc = new TicTac();
+		tc.start();
+		while (cur != null) {
+			double[] ds = new double[cur.sizeWithouBias()];
+			for (int i=0;i<cur.getNeuronios().size();i++) {
+				Neuronio n = cur.getNeuronios().get(i);
+				double d,saida;
+				
+				if (n.isBias())
+					continue;
+				
+				saida = n.saida();
+				if (isSaida) {
+					d = (t[i] - saida) * saida * (1-saida);
+				} else {
+					d = saida * (1-saida) * calcularD(n, ant, dAnt);
+				}
+				ds[i] = d;
+				update(d, n);
+			}
+			tc.stop();
+			
+			time = time + tc.getTime();
+			
+			dAnt = ds;
+			ant = cur;
+			cur = cur.getAnt();
+			isSaida=false;
+		}
+	}
+	
+	private double calcularD(Neuronio n, Linha ant, double[] dAnt) {
+		double d = 0.0D;
+		int i=0;
+		for (Neuronio ne : ant.getNeuronios()) {
+			for (Entrada e : ne.getEntradas()) {
+				if (e instanceof EntradaComPeso) {
+					EntradaComPeso ecp = (EntradaComPeso) e;
+					if (ecp.getNeuronio() == n) {
+						d += ecp.getPeso() * dAnt[i];
+					}
+				}
+			}
+			i++;
+		}
+		return d;
+	}
+	
+	private void update(double d, Neuronio neuronio) {
+		for (Entrada e : neuronio.getEntradas()) {
+			if (e instanceof EntradaComPeso) {
+				EntradaComPeso ecp = (EntradaComPeso) e;
+				double peso = ecp.getPeso();
+				double saidaAnt = ecp.getNeuronio().saida();
+				double nw = peso + (ALFA*d*saidaAnt) + ALFA*ecp.getVariacao();
+				ecp.setVariacao(nw - peso);
+				ecp.setPeso(nw);
+			}
+		}
+	}
+	
+	private void randomize() {
+		for (int i=0;i<pesos.length;i++) {
+			for (int j=0;j<pesos[i].length;j++) {
+				pesos[i][j] = getRandomValue();
+			}
+		}
+	}
+	
+	private double getRandomValue() {
+		return Math.random()*10 - 5D;
+	}
+
+	/*
+	public static void main(String[] args) {
+		TreinadorRede t = new TreinadorRede(3, new double[][] {{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0}}, 4,4,2);
+		double[][] r = t.train(new double[][] {{0,0,0,0,0,0},{0,0,0,1,0,0},{0,0,1,0,0,0},{0,0,1,1,0,1},{0,1,0,0,0,0},{0,1,0,1,0,0},{0,1,1,0,0,0},{0,1,1,1,0,1},{1,0,0,0,0,0},{1,0,0,1,0,0},{1,0,1,0,0,0},{1,0,1,1,0,1},{1,1,0,0,1,0},{1,1,0,1,1,0},{1,1,1,0,1,0},{1,1,1,1,1,1}});
+		StringBuilder sb = new StringBuilder("{");
+		for (int i=0;i<r.length;i++) {
+			if (i>0)
+				sb.append(",");
+			sb.append("{");
+			for (int j=0;j<r[i].length;j++) {
+				if (j>0)
+					sb.append(",");
+				sb.append(r[i][j]);
+			}
+			sb.append("}");
+		}
+		sb.append("}");
+		System.out.println(sb.toString());
+	}
+	*/
+	
+	public static class TicTac {
+		private Long t1;
+		private Long t2;
+		private Long dec;
+		
+		public TicTac() {
+		}
+		
+		public void start() {
+			t1 = System.currentTimeMillis();
+		}
+		
+		public void stop() {
+			t2 = System.currentTimeMillis();
+			dec = (t2-t1);
+		}
+		
+		public double getTime() {
+			return dec;
+		}
+		
+	}
+	
+}
+package br.com.vanhoz.ricardo.trabalho.milton.neural;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+public class Rede {
+	
+	private static final Funcao DEFAULT_FUNCTION = new FuncaoSigmoide();
+	private static final Funcao FUNCTION_NOTHING = new FuncaoNada();
+
+	List<Linha> linhas;
+	double[][] pesos;
+	
+	public Rede(int linhas, int... neuroniosLinha) {
+		if (neuroniosLinha.length != linhas) {
+			throw new RuntimeException("Linha != neuroniosLinha");
+		}
+		this.linhas = new ArrayList<Linha>();
+		for (int i=0;i<linhas;i++) {
+			Linha linha = new Linha(neuroniosLinha[i], (i==0 ? FUNCTION_NOTHING : DEFAULT_FUNCTION), (i == (linhas-1) ? false : true));
+			if (i > 0) {
+				linha.setAnt(this.linhas.get(i-1));
+			}
+			this.linhas.add(linha);
+		}
+	}
+	
+	public void setValoresEntradas(int neuronio, EntradaSimples entrada) {
+		linhas.get(0).setEntradaToNeuronio(neuronio, entrada);
+	}
+	
+	public void loadPesos(double[][] pesos) {
+		this.pesos = pesos;
+	}
+	
+	public int getNumeroNeuroniosSaida() {
+		return linhas.get(linhas.size()-1).sizeWithouBias();
+	}
+	
+	private Linha getResult(int index, int indexPesos) {
+		if (index == 0) {
+			return linhas.get(0);
+		}
+		
+		List<Neuronio> ant = getResult(index-1, indexPesos-linhas.get(index).sizeWithouBias()).getNeuronios();
+		List<Neuronio> cur = linhas.get(index).getNeuronios();
+		
+		for (int i=cur.size()-1;i>= 0;i--) {
+			Neuronio n = cur.get(i);
+			if (!n.isBias()) {
+				for (int j=0;j<ant.size();j++) {
+					Entrada e = n.getEntradaAt(j);
+					if (e == null) {
+						n.addEntrada(new EntradaComPeso(ant.get(j).saida(), pesos[indexPesos-i][j], ant.get(j)));
+					} else {
+						EntradaComPeso ecp = (EntradaComPeso) e;
+//						ecp.setPeso(pesos[indexPesos-i][j]);
+						ecp.setValor(ant.get(j).saida());
+					}
+				}
+			}
+		}
+		
+		return linhas.get(index);
+	}
+	
+	public Linha getResult() {
+		return getResult(linhas.size()-1, pesos.length-1);
+	}
+	
+	public static void main(String[] args) {
+		Rede rede = new Rede(3, 4,4,2);
+		rede.loadPesos(new double[][] {{0.5257144971539268,0.49455196485546304,-6.312861400274365,-6.645955017744132,8.721520799357702},{-8.914999426088436,2.3629605125569713,-0.14621774467058127,0.08113521166786408,1.992886690771857},{-5.235736057133266,-1.915204440985507,-2.648872047653137,2.5278165592233446,-4.333508001802203},{2.068390572619184,-8.484061729674833,-0.6669373518241657,-0.748244388963299,2.2385724815041796},{-0.5061279353452893,-11.562420710952075,-0.4148439418491548,-12.5637381472033,6.219831290353038},{-12.320972759966404,-0.2434836697943823,-11.365030980044025,-0.28472225100570614,5.927388753480272}});
+//		rede.loadPesos(new double[][] {{50,100,-30},{-50,-100,120},{50,100,-120}});
+		
+		double e1 = 0.0D;
+		double e2 = 0.0D;
+		double e3 = 0.0D;
+		double e4 = 0.0D;
+		
+		Scanner sc = new Scanner(System.in);
+		e1 = sc.nextDouble();
+		e2 = sc.nextDouble();
+		e3 = sc.nextDouble();
+		e4 = sc.nextDouble();
+		sc.close();
+		
+		rede.setValoresEntradas(0, new EntradaSimples(e1));
+		rede.setValoresEntradas(1, new EntradaSimples(e2));
+		rede.setValoresEntradas(2, new EntradaSimples(e3));
+		rede.setValoresEntradas(3, new EntradaSimples(e4));
+		
+		Linha l = rede.getResult();
+		double s1 = l.getNeuronios().get(0).saida();
+		double s2 = l.getNeuronios().get(1).saida();
+		BigDecimal saida1 = new BigDecimal(s1).setScale(2, BigDecimal.ROUND_HALF_UP);
+		BigDecimal saida2 = new BigDecimal(s2).setScale(2, BigDecimal.ROUND_HALF_UP);
+		System.out.println(s1+" - "+saida1);
+		System.out.println(s2+" - "+saida2);
+	}
+
+	public List<Linha> getLinhas() {
+		return linhas;
+	}
+	
+	public void updatePesos() {
+		int i=0;
+		for (Linha l : linhas) {
+			for (Neuronio n : l.getNeuronios()) {
+				boolean updated=false;
+				int j=0;
+				
+				for (Entrada entrada : n.getEntradas()) {
+					if (entrada instanceof EntradaComPeso) {
+						updated=true;
+						pesos[i][j] = ((EntradaComPeso) entrada).getPeso();
+						j++;
+					}
+				}
+				if (updated)
+					i++;
+			}
+		}
+	}
+	
+	public double[][] getPesos() {
+		return this.pesos;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		for (Linha l : linhas) {
+			sb.append("[");
+			for (Neuronio n : l.getNeuronios()) {
+				sb.append(n.hashCode());
+				sb.append("(");
+				for (Entrada e : n.getEntradas()) {
+					if (e instanceof EntradaComPeso) {
+						EntradaComPeso ecp = (EntradaComPeso) e;
+						sb.append(ecp.getNeuronio().hashCode());
+						sb.append(",");
+					}
+				}
+				sb.append("),");
+			}
+			sb.append("]\n");
+		}
+		return sb.toString();
+	}
+	
+}
+package br.com.vanhoz.ricardo.trabalho.milton.data;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.StringTokenizer;
+
+public class BaseDAO {
+
+	private static BaseDAO INSTANCE;
+
+	private final File f = new File("base.txt");
+
+	List<Registry> registry = null;
+
+	public synchronized static BaseDAO getInstance() {
+		if (INSTANCE == null)
+			INSTANCE = new BaseDAO();
+		return INSTANCE;
+	}
+
+	private BaseDAO() {
+		init();
+	}
+
+	private void init() {
+		try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+
+			registry = new ArrayList<BaseDAO.Registry>();
+
+			String line = null;
+			while ((line = br.readLine()) != null) {
+				if (!line.trim().isEmpty()) {
+					StringTokenizer st = new StringTokenizer(line, ",");
+					double freq = new Double(st.nextToken());
+					double val = new Double(st.nextToken());
+					int pos = new Integer(st.nextToken());
+					int id = new Integer(st.nextToken());
+					registry.add(new Registry(freq, val, pos, id));
+				}
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public List<Registry> getRegistries() {
+		return Collections.unmodifiableList(registry);
+	}
+
+	public void addRegistry(double frequency, double value, int pos, int id) {
+		synchronized (registry) {
+			registry.add(new Registry(frequency, value, pos, id));
+			save();
+		}
+	}
+
+	private synchronized void save() {
+		f.delete();
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
+			for (Registry r : registry) {
+				int freq = (int) r.getFrequency();
+				int value = (int) r.getValue();
+				int pos = r.getPosition();
+				int id = r.getId();
+				bw.write(freq + "," + value + "," + pos + "," + id);
+				bw.newLine();
+			}
+			bw.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public static class Registry {
+		private double frequency;
+		private double value;
+		private int position;
+		private int id;
+
+		public Registry() {
+			// TODO Auto-generated constructor stub
+		}
+
+		public Registry(double frequency, double value, int position, int id) {
+			super();
+			this.frequency = frequency;
+			this.value = value;
+			this.position = position;
+			this.id = id;
+		}
+
+		public double getFrequency() {
+			return frequency;
+		}
+
+		public void setFrequency(double frequency) {
+			this.frequency = frequency;
+		}
+
+		public double getValue() {
+			return value;
+		}
+
+		public void setValue(double value) {
+			this.value = value;
+		}
+
+		public int getId() {
+			return id;
+		}
+
+		public void setId(int id) {
+			this.id = id;
+		}
+
+		public int getPosition() {
+			return position;
+		}
+
+		public void setPosition(int position) {
+			this.position = position;
+		}
+
+	}
+        
+        public void update() {
+            init();
+        }
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.data;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class PesosDAO {
+	private static final String FILENAME = "pesos.txt";
+
+	private static PesosDAO INSTANCE;
+
+	private double[][] pesos;
+
+	public static synchronized PesosDAO getInstance() {
+		try {
+			if (INSTANCE == null)
+				INSTANCE = new PesosDAO();
+			return INSTANCE;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	private PesosDAO() throws IOException {
+		init();
+	}
+
+	private void init() throws IOException {
+		File f = new File(FILENAME);
+		int maxSizeArray = -1;
+		BufferedReader br = new BufferedReader(new FileReader(f));
+		String line = null;
+		List<Double[]> doubles = new ArrayList<Double[]>();
+		while ((line = br.readLine()) != null) {
+			StringTokenizer st = new StringTokenizer(line, ",");
+			int j = 0;
+
+			if (maxSizeArray < st.countTokens())
+				maxSizeArray = st.countTokens();
+
+			Double[] ent = new Double[st.countTokens()];
+			while (st.hasMoreElements()) {
+				String token = st.nextToken();
+				double valor = Double.parseDouble(token);
+				ent[j] = new Double(valor);
+				j++;
+			}
+			doubles.add(ent);
+		}
+		br.close();
+
+		pesos = new double[doubles.size()][maxSizeArray];
+		for (int i = 0; i < doubles.size(); i++) {
+			Double[] p = doubles.get(i);
+			for (int j = 0; j < p.length; j++) {
+				pesos[i][j] = p[j].doubleValue();
+			}
+		}
+	}
+
+	public double[][] getPesos() {
+		return Arrays.copyOf(pesos, pesos.length);
+	}
+	
+	public void salvar(double[][] result) {
+		StringBuilder sb = new StringBuilder();
+		for (int i=0;i<result.length;i++) {
+			for (int j=0;j<result[i].length;j++) {
+				if (j > 0)
+					sb.append(",");
+				
+				sb.append(result[i][j]);
+			}
+			sb.append("\n");
+		}
+		
+		try {
+			File f = new File("pesos.txt");
+			if (f.exists()) {
+				f.delete();
+			}
+			BufferedWriter bw = new BufferedWriter(new FileWriter(f));
+			bw.write(sb.toString());
+			bw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+        
+        public void update() {
+            try {
+                init();
+            } catch (IOException ex) {
+                Logger.getLogger(PesosDAO.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.main;
+
+public class AnalysisResult {
+
+	private double frequency;
+	private double value;
+	private double incA;
+	private double incB;
+
+	public AnalysisResult(double frequency, double value, double incA,
+			double incB) {
+		super();
+		this.frequency = frequency;
+		this.value = value;
+		this.incA = incA;
+		this.incB = incB;
+	}
+
+	public double getFrequency() {
+		return frequency;
+	}
+
+	public void setFrequency(double frequency) {
+		this.frequency = frequency;
+	}
+
+	public double getValue() {
+		return value;
+	}
+
+	public void setValue(double value) {
+		this.value = value;
+	}
+
+	public double getIncA() {
+		return incA;
+	}
+
+	public void setIncA(double incA) {
+		this.incA = incA;
+	}
+
+	public double getIncB() {
+		return incB;
+	}
+
+	public void setIncB(double incB) {
+		this.incB = incB;
+	}
+
+	@Override
+	public String toString() {
+		return "AnalysisResult [frequency=" + frequency + ", value=" + value
+				+ ", incA=" + incA + ", incB=" + incB + "]";
+	}
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.main;
+
+public class Utils {
+
+	public static double[] getBits(double a, int size) {
+		int trunc = (int) a;
+		String truncd = Integer.toBinaryString(trunc);
+		String result = String.format("%0"+size+"d", 0)+truncd;
+		result = result.substring(result.length()-size);
+		double[] r = new double[result.length()];
+		for (int i=0;i<result.length();i++) {
+			r[i] = Integer.parseInt(String.valueOf(result.charAt(i)));
+		}
+		return r;
+	}
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.main;
+
+import java.util.Arrays;
+
+import br.com.vanhoz.ricardo.trabalho.milton.data.BaseDAO;
+import br.com.vanhoz.ricardo.trabalho.milton.data.BaseDAO.Registry;
+import br.com.vanhoz.ricardo.trabalho.milton.data.PesosDAO;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.train.TreinadorRede;
+
+public class TestTrainNet {
+	
+	public static void main(String[] args) {
+		TreinadorRede.DEBUG=Boolean.TRUE;
+		
+		BaseDAO inst = BaseDAO.getInstance();
+		
+		System.out.println("Treinando rede...");
+		double[][] entries = new double[inst.getRegistries().size()][35];
+		int i=0;
+		for (Registry r : inst.getRegistries()) {
+			double[] ent = new double[35];
+//			ent[0] = r.getFrequency()/10000.0D;
+//			ent[1] = r.getValue()/100000.0D;
+//			ent[2] = r.getPosition()/10.0D;
+			System.arraycopy(Utils.getBits(r.getFrequency(), 11), 0, ent, 0, 11);
+			System.arraycopy(Utils.getBits(r.getValue(), 17), 0, ent, 11, 17);
+			System.arraycopy(Utils.getBits(r.getPosition(), 3), 0, ent, 28, 3);
+			
+			System.arraycopy(Utils.getBits(r.getId(), 4), 0, ent, 31, 4);
+			
+			entries[i] = ent;
+			i++;
+		}
+		
+		System.out.println("Obtidos "+entries.length+" entradas para treinamento");
+		System.out.println(Arrays.toString(entries[0]));
+		
+		TreinadorRede rede = new TreinadorRede(3, new double[14][35], 31,10,4);
+		double[][] result = rede.train(entries, 1000);
+		
+		for (double[] d : result) {
+			System.out.println("Resultado: "+Arrays.toString(d));
+		}
+		
+		System.out.println("Salvando os pesos no arquivo...");
+		
+		salvarPesos(result);
+		
+	}
+	
+	private static void salvarPesos(double[][] result) {
+		PesosDAO.getInstance().salvar(result);
+	}
+	
+}
+package br.com.vanhoz.ricardo.trabalho.milton.main;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.jtransforms.fft.DoubleFFT_1D;
+
+public class SoundAnalyzer {
+	
+	private double[] soundData;
+	private double[] fft;
+
+	public SoundAnalyzer(byte[] soundData) {
+		this.soundData = truncateData(soundData);
+		applyHanning(this.soundData);
+	}
+	
+	public List<AnalysisResult> getFirstBiggestResults(int qtd) {
+		double[] fft = getFFT();
+		List<AnalysisResult> result = new ArrayList<AnalysisResult>(qtd);
+		for (int i=0;i<qtd;i++) {
+			result.add(getBiggestValuePos(fft, i+1));
+		}
+		return result;
+	}
+	
+	private double[] getFFT() {
+		if (fft == null) {
+			double[] r = new double[soundData.length*2];
+			System.arraycopy(soundData, 0, r, 0, soundData.length);
+
+			DoubleFFT_1D fft = new DoubleFFT_1D(soundData.length);
+			fft.realForwardFull(r);
+			
+			// passa alta
+			for (int i=0;i<200;i++) {
+				r[i] = 0.0D;
+			}
+			
+			// passa baixa
+			if (r.length >= 4000) {
+				for (int i=4000;i<r.length;i++) {
+					r[i] = 0.0D;
+				}
+			}
+
+			this.fft = r;
+		}
+		return fft;
+	}
+	
+	private AnalysisResult getBiggestValuePos(double[] fft, int index) {
+		int pos=0;
+		Set<Integer> biggestPos = new HashSet<Integer>();
+		double max = 0.0;
+		double incA=0.0;
+		double incB=0.0;
+		
+		for (int j=0;j<index;j++) {
+			max = 0.0;
+			for (int i=0;i<fft.length;i += 2) {
+				if (biggestPos.contains(i))
+					continue;
+				double abs = Math.sqrt(Math.pow(fft[i], 2) + Math.pow(fft[i+1], 2));
+				if (abs > max) {
+					boolean ignore = false;
+					if (i == 0)
+						continue;
+					for (int poses : biggestPos) {
+						if (Math.abs(poses - i) < 20) {
+							ignore = true;
+						}
+					}
+					if (ignore)
+						continue;
+					max = abs;
+					pos = i;
+				}
+			}
+			if (!biggestPos.contains(pos)) {
+				biggestPos.add(pos);
+			}
+		}
+		
+		return new AnalysisResult(pos/2, max, incA, incB);
+	}
+	
+	private double[] getHanningWindow(int N) {
+		double[] r = new double[N];
+		double arg = 2 * Math.PI / (N-1);
+		for (int i=0;i<N;i++) {
+			r[i] = 0.5D * (1.0D - Math.cos(arg*i));
+		}
+		return r;
+	}
+
+	private double[] truncateData(byte[] data) {
+		int exp = (int)(Math.log10(data.length) / Math.log10(2));
+		int N = (int) Math.pow(2, exp);
+		double[] result = new double[N];
+		for (int i=0;i<N;i++) {
+			result[i] = data[i];
+		}
+		return result;
+	}
+	
+	private void applyHanning(double[] data) {
+		double[] han = getHanningWindow(data.length);
+		for (int i=0;i<data.length;i++) {
+			data[i] *= han[i];
+		}
+	}
+	
+//	private void applyBandPass(double[] data) {
+//		double[] fft = getFFT();
+//		double[] result = 
+//		DoubleFFT_1D func = new DoubleFFT_1D(soundData.length);
+//		func.realInverseFull(arg0, arg1);
+//	}
+
+}
+package br.com.vanhoz.ricardo.trabalho.milton.main;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+import br.com.vanhoz.ricardo.trabalho.milton.data.BaseDAO;
+import br.com.vanhoz.ricardo.trabalho.milton.data.BaseDAO.Registry;
+import br.com.vanhoz.ricardo.trabalho.milton.rec.AudioRecorder;
+
+public class TestAnalyzeAudio {
+	public static void main(String[] args) {
+		try {
+			int id;
+			String nome;
+			
+			System.out.println("Gravador e analisador de voz\n====================\n\n");
+			Scanner sc = new Scanner(System.in);
+			System.out.print("Digite o id da pessoa: ");
+			id = sc.nextInt();
+			System.out.print("Digite o nome da pessoa: ");
+			nome = sc.next();
+			sc.close();
+
+			ArrayList<BaseDAO.Registry> registries = new ArrayList<BaseDAO.Registry>();
+			
+			registries.addAll(capture(id));
+			
+			System.out.println("Gravando dados de ["+nome+"] no arquivo...");
+			BaseDAO inst = BaseDAO.getInstance();
+			for (BaseDAO.Registry r : registries) {
+				inst.addRegistry(r.getFrequency(), r.getValue(), r.getPosition(), r.getId());
+			}
+			addId(id, nome);
+			System.out.println("Feito!");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private static void addId(int id, String nome) throws IOException {
+		File f = new File("id.txt");
+		if (!f.exists()) {
+			f.createNewFile();
+		}
+		BufferedWriter bw = new BufferedWriter(new FileWriter(f));
+		bw.append(id+","+nome);
+		bw.newLine();
+		bw.flush();
+		bw.close();
+	}
+	
+	private static List<BaseDAO.Registry> capture(int id) throws IOException {
+		try {
+			AudioRecorder rec = new AudioRecorder();
+			rec.captureFromFile("hi.wav");
+			
+			System.out.println("Gravando (pode começar a falar...)");
+			ArrayList<BaseDAO.Registry> registries = new ArrayList<BaseDAO.Registry>();
+			
+			for (int j=0;j<5;j++) {
+				System.out.println("Tentativa "+j);
+//				rec.capture(2000);
+//				rec.saveDataToWAV("/tmp/ad.wav");
+				
+				byte[] audio = rec.getCapturedAudio();
+				SoundAnalyzer sa = new SoundAnalyzer(audio);
+				List<AnalysisResult> result = sa.getFirstBiggestResults(5);
+	
+				int i=0;
+				for (AnalysisResult ar : result) {
+					System.out.println(ar);
+					if (j==0) {
+						registries.add(new BaseDAO.Registry(ar.getFrequency(), ar.getValue(), i, id));
+					} else {
+						Registry rg = registries.get(i);
+						rg.setFrequency(rg.getFrequency()+ar.getFrequency());
+						rg.setValue(rg.getValue()+ar.getValue());
+					}
+					i++;
+				}
+			}
+			
+			for (BaseDAO.Registry ar : registries) {
+				ar.setFrequency(ar.getFrequency()/registries.size());
+				ar.setValue(ar.getValue()/registries.size());
+			}
+			return registries;
+		} finally {
+			
+		}
+	}
+	
+}
+package br.com.vanhoz.ricardo.trabalho.milton.main;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.List;
+
+import br.com.vanhoz.ricardo.trabalho.milton.data.PesosDAO;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.EntradaSimples;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.Linha;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.Rede;
+import br.com.vanhoz.ricardo.trabalho.milton.rec.AudioRecorder;
+import br.com.vanhoz.ricardo.trabalho.milton.tela.Logger;
+
+public class RedeNeuralExecute {
+	private double[][] pesos;
+	private Rede rede;
+        private Logger logger;
+
+      	public RedeNeuralExecute(Logger logger) {
+            this();
+            this.logger = logger;
+        }
+
+	public RedeNeuralExecute() {
+		pesos = PesosDAO.getInstance().getPesos();
+		rede = new Rede(3, 31,10,4);
+		rede.loadPesos(pesos);
+	}
+	
+	public int getIdFromMicrofone() throws IOException {
+		final String PATH="/tmp/audio.wav";
+		AudioRecorder ar = new AudioRecorder();
+		ar.capture(2000);
+		ar.saveDataToWAV(PATH);
+		return getIdFromCapture(ar.getCapturedAudio());
+	}
+
+	public int getIdFromCaptureFile(String file) throws IOException {
+		AudioRecorder ar = new AudioRecorder();
+		ar.captureFromFile(file);
+		return getIdFromCapture(ar.getCapturedAudio());
+	}
+
+	private int getIdFromCapture(byte[] data) {
+		SoundAnalyzer analyzer = new SoundAnalyzer(data);
+		List<AnalysisResult> results = analyzer.getFirstBiggestResults(5);
+		
+		double[] ids = new double[5];
+		
+		for (int i=0;i<results.size();i++) {
+			AnalysisResult result = results.get(i);
+			logger.log(result.toString());
+			double[] freq = Utils.getBits(result.getFrequency(), 11);
+			double[] val = Utils.getBits(result.getValue(), 17);
+			double[] pos = Utils.getBits(i, 3);
+			
+			for (int j=0;j<freq.length;j++) {
+				rede.setValoresEntradas(j, new EntradaSimples(freq[j]));
+			}
+
+			for (int j=0;j<val.length;j++) {
+				rede.setValoresEntradas(11+j, new EntradaSimples(val[j]));
+			}
+
+			for (int j=0;j<pos.length;j++) {
+				rede.setValoresEntradas(28+j, new EntradaSimples(pos[j]));
+			}
+			
+			Linha l = rede.getResult();
+			
+			double id = 0.0D;
+			for (int j=l.getNeuronios().size()-1;j>=0;j--) {
+				double d = l.getNeuronios().get(j).saida();
+				logger.log(String.valueOf(d));
+				id += Math.pow(2, j) * (new BigDecimal(d).setScale(0, BigDecimal.ROUND_HALF_UP).doubleValue());
+			}
+			
+			ids[i] = id;
+		}
+		
+		double media = 0.0D;
+		for (int i=0;i<ids.length;i++) {
+			media += ids[i];
+		}
+		media /= ids.length;
+		return (int)media;
+	}
+	
+	public static void main(String[] args) {
+		try {
+			RedeNeuralExecute r = new RedeNeuralExecute();
+			int id = r.getIdFromCaptureFile("hi.wav");
+			System.out.println("\n============\n"+id);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package br.com.vanhoz.ricardo.trabalho.milton.tela;
+
+import javax.swing.JTextArea;
+
+/**
+ *
+ * @author ricardo
+ */
+public class Logger {
+    
+    private JTextArea textArea;
+
+    public Logger(JTextArea textArea) {
+        this.textArea = textArea;
+    }
+    
+    public void log(String msg) {
+        String e = textArea.getText();
+        e += "\n"+msg;
+        textArea.setText(e);
+    }
+    
+}
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package br.com.vanhoz.ricardo.trabalho.milton.tela;
+
+import br.com.vanhoz.ricardo.trabalho.milton.data.BaseDAO;
+import br.com.vanhoz.ricardo.trabalho.milton.data.PesosDAO;
+import br.com.vanhoz.ricardo.trabalho.milton.main.AnalysisResult;
+import br.com.vanhoz.ricardo.trabalho.milton.main.RedeNeuralExecute;
+import br.com.vanhoz.ricardo.trabalho.milton.main.SoundAnalyzer;
+import br.com.vanhoz.ricardo.trabalho.milton.main.TestTrainNet;
+import br.com.vanhoz.ricardo.trabalho.milton.main.Utils;
+import br.com.vanhoz.ricardo.trabalho.milton.neural.train.TreinadorRede;
+import br.com.vanhoz.ricardo.trabalho.milton.rec.AudioRecorder;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import javax.swing.JFileChooser;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.plaf.FileChooserUI;
+import javax.swing.plaf.basic.BasicFileChooserUI;
+
+/**
+ *
+ * @author ricardo
+ */
+public class Main extends javax.swing.JFrame {
+
+    private Logger logger;
+
+    /**
+     * Creates new form Main
+     */
+    public Main() {
+        initComponents();
+        logger = new Logger(jTextArea1);
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jPanel1 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTextArea1 = new javax.swing.JTextArea();
+        jTabbedPane1 = new javax.swing.JTabbedPane();
+        jPanel2 = new javax.swing.JPanel();
+        jLabel4 = new javax.swing.JLabel();
+        jButton2 = new javax.swing.JButton();
+        jLabel5 = new javax.swing.JLabel();
+        jButton4 = new javax.swing.JButton();
+        jLabel7 = new javax.swing.JLabel();
+        lblNomeResultado = new javax.swing.JLabel();
+        jPanel3 = new javax.swing.JPanel();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        txtId = new javax.swing.JTextField();
+        txtNome = new javax.swing.JTextField();
+        jButton1 = new javax.swing.JButton();
+        lblGravandoNovo = new javax.swing.JLabel();
+        jLabel8 = new javax.swing.JLabel();
+        jButton5 = new javax.swing.JButton();
+        jPanel4 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        txtCiclos = new javax.swing.JTextField();
+        jButton3 = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        jTextArea1.setEditable(false);
+        jTextArea1.setColumns(20);
+        jTextArea1.setRows(5);
+        jScrollPane1.setViewportView(jTextArea1);
+
+        jLabel4.setText("Clique em gravar");
+
+        jButton2.setText("Gravar");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
+        jLabel5.setText("Ou clique em abrir");
+
+        jButton4.setText("Abrir");
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton4ActionPerformed(evt);
+            }
+        });
+
+        jLabel7.setText("Resultado");
+
+        lblNomeResultado.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel4)
+                    .addComponent(jButton2)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel5)
+                        .addGap(18, 18, 18)
+                        .addComponent(jButton4)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel7)
+                .addGap(18, 18, 18)
+                .addComponent(lblNomeResultado, javax.swing.GroupLayout.DEFAULT_SIZE, 273, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel4)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jButton2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel5)
+                            .addComponent(jButton4)))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(lblNomeResultado, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(6, 6, 6)))
+                .addContainerGap(16, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("Detectar", jPanel2);
+
+        jLabel2.setText("Id");
+
+        jLabel3.setText("Nome");
+
+        jButton1.setText("Gravar");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
+        jLabel8.setText("Ou suba um arquivo");
+
+        jButton5.setText("...");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addGap(18, 18, 18)
+                        .addComponent(txtId))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(jLabel3)
+                        .addGap(18, 18, 18)
+                        .addComponent(txtNome))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(jButton1)
+                        .addGap(18, 18, 18)
+                        .addComponent(lblGravandoNovo, javax.swing.GroupLayout.PREFERRED_SIZE, 0, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel8)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButton5)
+                        .addGap(0, 296, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel2)
+                    .addComponent(txtId, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(txtNome, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(lblGravandoNovo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel8)
+                        .addComponent(jButton5)))
+                .addContainerGap())
+        );
+
+        jTabbedPane1.addTab("Novo", jPanel3);
+
+        jLabel1.setText("Realizar treinamento na rede neural");
+
+        jLabel6.setText("Ciclos");
+
+        txtCiclos.setText("1000");
+
+        jButton3.setText("Treinar");
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addGap(0, 314, Short.MAX_VALUE))
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(txtCiclos))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(jButton3)))
+                .addContainerGap())
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel1)
+                .addGap(18, 18, 18)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(txtCiclos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
+                .addComponent(jButton3)
+                .addContainerGap())
+        );
+
+        jTabbedPane1.addTab("Treinamento", jPanel4);
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane1)
+            .addComponent(jTabbedPane1)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 164, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 201, Short.MAX_VALUE))
+        );
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private BaseDAO baseDAO = BaseDAO.getInstance();
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+        SwingWorker<Object, Object> worker = new SwingWorker<Object, Object>() {
+            
+            @Override
+            protected Object doInBackground() throws Exception {
+                logger.log("Treinando rede...");
+                List<BaseDAO.Registry> reg = baseDAO.getRegistries();
+                double[][] entries = new double[reg.size()][35];
+                int i = 0;
+                for (BaseDAO.Registry r : reg) {
+                    double[] ent = new double[35];
+                    System.arraycopy(Utils.getBits(r.getFrequency(), 11), 0, ent, 0, 11);
+                    System.arraycopy(Utils.getBits(r.getValue(), 17), 0, ent, 11, 17);
+                    System.arraycopy(Utils.getBits(r.getPosition(), 3), 0, ent, 28, 3);
+
+                    System.arraycopy(Utils.getBits(r.getId(), 4), 0, ent, 31, 4);
+
+                    entries[i] = ent;
+                    i++;
+                }
+
+                logger.log("Obtidos " + entries.length + " entradas para treinamento");
+                logger.log(Arrays.toString(entries[0]));
+
+                TreinadorRede rede = new TreinadorRede(logger, 3, new double[14][35], 31, 10, 4);
+                int ciclos = Integer.parseInt(txtCiclos.getText());
+                double[][] result = rede.train(entries, ciclos);
+
+                for (double[] d : result) {
+                    logger.log("Resultado: " + Arrays.toString(d));
+                }
+
+                logger.log("Salvando os pesos no arquivo...");
+
+                salvarPesos(result);
+                
+                PesosDAO.getInstance().update();
+                
+                return null;
+            }
+            
+        };
+        
+        worker.execute();
+    }//GEN-LAST:event_jButton3ActionPerformed
+
+    private String getNomeFromId(int id) {
+        File f = new File("id.txt");
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(f));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                if (!line.trim().isEmpty()) {
+                    String[] fields = line.split(",");
+                    int idLine = Integer.parseInt(fields[0]);
+                    if (idLine == id) {
+                        return fields[1];
+
+                    }
+                }
+            }
+        } catch (FileNotFoundException ex) {
+            java.util.logging.Logger.getLogger(Main.class
+                    .getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            java.util.logging.Logger.getLogger(Main.class
+                    .getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+
+                } catch (IOException ex) {
+                    java.util.logging.Logger.getLogger(Main.class
+                            .getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        return null;
+    }
+
+    private void addId(int id, String nome) throws IOException {
+        File f = new File("id.txt");
+        if (!f.exists()) {
+            f.createNewFile();
+        }
+
+        BufferedReader br = new BufferedReader(new FileReader(f));
+        String line = null;
+        List<String> lid = new ArrayList<>();
+        List<String> lnome = new ArrayList<>();
+        while ((line = br.readLine()) != null) {
+            if (!line.trim().isEmpty()) {
+                String[] fields = line.split(",");
+                lid.add(fields[0]);
+                lnome.add(fields[1]);
+            }
+        }
+        br.close();
+
+        BufferedWriter bw = new BufferedWriter(new FileWriter(f));
+        for (int i = 0; i < lid.size(); i++) {
+            bw.write(lid.get(i) + "," + lnome.get(i));
+            bw.newLine();
+        }
+        bw.write(id + "," + nome);
+        bw.newLine();
+        bw.flush();
+        bw.close();
+    }
+
+    private List<BaseDAO.Registry> capture(int id) throws IOException {
+        try {
+            AudioRecorder rec = new AudioRecorder();
+            rec.captureFromFile("hi.wav");
+            rec.captureFromFile("hi.wav");
+            rec.captureFromFile("hi.wav");
+            rec.captureFromFile("hi.wav");
+            rec.captureFromFile("hi.wav");
+            rec.captureFromFile("hi.wav");
+            rec.captureFromFile("hi.wav");
+            rec.captureFromFile("hi.wav");
+            rec.captureFromFile("hi.wav");
+
+            logger.log("Gravando (pode começar a falar...)");
+            ArrayList<BaseDAO.Registry> registries = new ArrayList<BaseDAO.Registry>();
+
+            for (int j = 0; j < 5; j++) {
+                System.out.println("Tentativa " + j);
+//				rec.capture(2000);
+//				rec.saveDataToWAV("/tmp/ad.wav");
+
+                byte[] audio = rec.getCapturedAudio();
+                SoundAnalyzer sa = new SoundAnalyzer(audio);
+                List<AnalysisResult> result = sa.getFirstBiggestResults(5);
+
+                int i = 0;
+                for (AnalysisResult ar : result) {
+                    System.out.println(ar);
+                    if (j == 0) {
+                        registries.add(new BaseDAO.Registry(ar.getFrequency(), ar.getValue(), i, id));
+                    } else {
+                        BaseDAO.Registry rg = registries.get(i);
+                        rg.setFrequency(rg.getFrequency() + ar.getFrequency());
+                        rg.setValue(rg.getValue() + ar.getValue());
+                    }
+                    i++;
+                }
+            }
+
+            for (BaseDAO.Registry ar : registries) {
+                ar.setFrequency(ar.getFrequency() / registries.size());
+                ar.setValue(ar.getValue() / registries.size());
+            }
+            return registries;
+        } finally {
+
+        }
+    }
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+        BaseDAO.getInstance().update();
+        RedeNeuralExecute exec = new RedeNeuralExecute(logger);
+
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int id = exec.getIdFromMicrofone();
+                    String nome = getNomeFromId(id);
+                    if (nome != null) {
+                        lblNomeResultado.setText(nome);
+                    } else {
+                        lblNomeResultado.setText("Não reconhecido");
+
+                    }
+                } catch (IOException ex) {
+                    java.util.logging.Logger.getLogger(Main.class
+                            .getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
+
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        // TODO add your handling code here:
+        BaseDAO.getInstance().update();
+        RedeNeuralExecute rede = new RedeNeuralExecute(logger);
+        SwingUtilities.invokeLater(new Runnable() {
+
+            @Override
+            public void run() {
+                JFileChooser jfc = new JFileChooser();
+                int status = jfc.showOpenDialog(null);
+                if (status == JFileChooser.APPROVE_OPTION) {
+                    File f = jfc.getSelectedFile();
+                    try {
+                        int id = rede.getIdFromCaptureFile(f.getAbsolutePath());
+                        String nome = getNomeFromId(id);
+                        if (nome != null) {
+                            lblNomeResultado.setText(nome);
+                        } else {
+                            lblNomeResultado.setText("Não reconhecido");
+
+                        }
+
+                    } catch (IOException ex) {
+                        java.util.logging.Logger.getLogger(Main.class
+                                .getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        });
+    }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        SwingUtilities.invokeLater(new Runnable() {
+
+            @Override
+            public void run() {
+                lblGravandoNovo.setText("Gravando");
+                int id = Integer.parseInt(txtId.getText());
+                String nome = txtNome.getText();
+
+                AudioRecorder ar = new AudioRecorder();
+                ar.capture(2000);
+                byte[] data = ar.getCapturedAudio();
+
+                ArrayList<BaseDAO.Registry> registries = new ArrayList<BaseDAO.Registry>();
+
+                try {
+                    registries.addAll(capture(id));
+
+                    logger.log("Gravando dados de [" + nome + "] no arquivo...");
+                    BaseDAO inst = BaseDAO.getInstance();
+                    for (BaseDAO.Registry r : registries) {
+                        inst.addRegistry(r.getFrequency(), r.getValue(), r.getPosition(), r.getId());
+                    }
+                    addId(id, nome);
+
+                } catch (IOException ex) {
+                    java.util.logging.Logger.getLogger(Main.class
+                            .getName()).log(Level.SEVERE, null, ex);
+                }
+                lblGravandoNovo.setText("");
+                logger.log("Feito!");
+            }
+        });
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        // TODO add your handling code here:
+        SwingUtilities.invokeLater(new Runnable() {
+
+            @Override
+            public void run() {
+                JFileChooser jfc = new JFileChooser();
+                int status = jfc.showOpenDialog(null);
+                if (status == JFileChooser.APPROVE_OPTION) {
+                    File f = jfc.getSelectedFile();
+
+                    int id = Integer.parseInt(txtId.getText());
+                    String nome = txtNome.getText();
+
+                    AudioRecorder ar = new AudioRecorder();
+                    try {
+                        ar.captureFromFile(f.getAbsolutePath());
+
+                    } catch (IOException ex) {
+                        java.util.logging.Logger.getLogger(Main.class
+                                .getName()).log(Level.SEVERE, null, ex);
+                    }
+                    byte[] data = ar.getCapturedAudio();
+
+                    ArrayList<BaseDAO.Registry> registries = new ArrayList<BaseDAO.Registry>();
+
+                    try {
+                        registries.addAll(capture(id));
+
+                        logger.log("Gravando dados de [" + nome + "] no arquivo...");
+                        BaseDAO inst = BaseDAO.getInstance();
+                        for (BaseDAO.Registry r : registries) {
+                            inst.addRegistry(r.getFrequency(), r.getValue(), r.getPosition(), r.getId());
+                        }
+                        addId(id, nome);
+
+                    } catch (IOException ex) {
+                        java.util.logging.Logger.getLogger(Main.class
+                                .getName()).log(Level.SEVERE, null, ex);
+                    }
+                    lblGravandoNovo.setText("");
+                    logger.log("Feito!");
+
+                }
+            }
+        });
+
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void salvarPesos(double[][] result) {
+        PesosDAO.getInstance().salvar(result);
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(Main.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(Main.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(Main.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(Main.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new Main().setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
+    private javax.swing.JButton jButton3;
+    private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JTextArea jTextArea1;
+    private javax.swing.JLabel lblGravandoNovo;
+    private javax.swing.JLabel lblNomeResultado;
+    private javax.swing.JTextField txtCiclos;
+    private javax.swing.JTextField txtId;
+    private javax.swing.JTextField txtNome;
+    // End of variables declaration//GEN-END:variables
+}
+package br.com.vanhoz.ricardo.trabalho.milton.rec;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.DataLine.Info;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.TargetDataLine;
+import javax.sound.sampled.UnsupportedAudioFileException;
+
+public class AudioRecorder {
+	
+	private byte[] capturedAudio;
+	private byte[] convertedAudio;
+	private final AudioFormat format = new AudioFormat(8000, 8, 1, true, false);
+	
+	public byte[] getCapturedAudio() {
+		return Arrays.copyOf(capturedAudio, capturedAudio.length);
+	}
+
+	public byte[] getConvertedAudio() {
+		return Arrays.copyOf(convertedAudio, convertedAudio.length);
+	}
+
+	public void capture(int timeMilis) {
+		Info info = new DataLine.Info(TargetDataLine.class, format);
+		if (!AudioSystem.isLineSupported(info)) {
+			throw new RuntimeException("Microfone não suportado");
+		}
+		
+		TargetDataLine line = null;
+		try {
+			ByteArrayOutputStream os = new ByteArrayOutputStream();
+			line = (TargetDataLine) AudioSystem.getLine(info);
+			line.open(format, 1024);
+			line.start();
+			
+			byte[] buf = new byte[1024];
+			
+			long t1,t2;
+			t1 = System.currentTimeMillis();
+			
+			for (;;) {
+				line.read(buf, 0, buf.length);
+				os.write(buf);
+				
+				t2 = System.currentTimeMillis();
+				if ((t2-t1) >= timeMilis) {
+					break;
+				}
+			}
+			
+			line.stop();
+			
+			os.close();
+			
+			capturedAudio = os.toByteArray();
+		} catch (LineUnavailableException | IOException e) {
+			throw new RuntimeException(e.getMessage(), e);
+		} finally {
+			line.close();
+		}
+	}
+	
+	public void saveDataToWAV(String filePath) throws IOException {
+		if (capturedAudio == null) {
+			throw new RuntimeException("Áudio não capturado");
+		}
+		
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(capturedAudio);
+				AudioInputStream ais = new AudioInputStream(bais, format, capturedAudio.length)) {
+			Files.deleteIfExists(Paths.get(filePath));
+			AudioSystem.write(ais, AudioFileFormat.Type.WAVE, new File(filePath));
+		}
+	}
+	
+	public void reduceNoise(String filePath) {
+		final String trimCmd = "sox "+filePath+" /tmp/audio-trimmed.wav trim 0.3";
+//		final String highPassCmd = "sox "+filePath+" /tmp/audio-high.wav highpass 100";
+//		final String lowPassCmd = "sox /tmp/audio-high.wav /tmp/audio-low.wav lowpass 4000";
+		final String noiseProfileCmd = "sox /tmp/audio-trimmed.wav -n noiseprof /tmp/noisep";
+		final String noiseRedCmd = "sox "+filePath+" /tmp/audio-result.wav noisered /tmp/noisep 0.24";
+		
+		try {
+			execCmd(new String[] {trimCmd,noiseProfileCmd,noiseRedCmd});
+			
+			File f = new File("/tmp/audio-result.wav");
+			if (!f.exists()) {
+				throw new RuntimeException("Um erro ocorreu ao tentar aplicar o efeito no audio");
+			}
+			
+			try (AudioInputStream is = AudioSystem.getAudioInputStream(f);
+					ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+				byte[] buf = new byte[1024];
+				int count=-1;
+				while ((count = is.read(buf)) != -1) {
+					baos.write(buf, 0, count);
+				}
+				this.convertedAudio = baos.toByteArray();
+			} catch (UnsupportedAudioFileException e) {
+				e.printStackTrace();
+			}
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void execCmd(String... cmd) throws IOException {
+		for (String c : cmd) {
+			Process p = Runtime.getRuntime().exec(c.split(" "));
+			try {
+				p.waitFor();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} finally {
+			}
+		}
+	}
+	
+	public static void main(String[] args) {
+		
+		AudioRecorder ar = new AudioRecorder();
+		
+		ar.capture(2000);
+		
+		try {
+			ar.saveDataToWAV("/tmp/audio.wav");
+			ar.reduceNoise("/tmp/audio.wav");
+			byte[] ca = ar.getCapturedAudio();
+			byte[] c = ar.getConvertedAudio();
+			
+			System.out.println("ca => "+ca.length);
+			System.out.println("c => "+c.length);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public void captureFromFile(String file) throws IOException {
+		try {
+			AudioInputStream is = AudioSystem.getAudioInputStream(format, AudioSystem.getAudioInputStream(new File(file)));
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			byte[] buf = new byte[1024];
+			int count=-1;
+			while ((count=is.read(buf))>0) {
+				baos.write(buf, 0, count);
+			}
+			baos.close();
+			is.close();
+			capturedAudio = baos.toByteArray();
+		} catch (UnsupportedAudioFileException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+}

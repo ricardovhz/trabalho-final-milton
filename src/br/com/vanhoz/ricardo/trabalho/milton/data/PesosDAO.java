@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PesosDAO {
 	private static final String FILENAME = "pesos.txt";
@@ -94,5 +96,13 @@ public class PesosDAO {
 			e.printStackTrace();
 		}
 	}
+        
+        public void update() {
+            try {
+                init();
+            } catch (IOException ex) {
+                Logger.getLogger(PesosDAO.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
 
 }

@@ -6,6 +6,7 @@ import br.com.vanhoz.ricardo.trabalho.milton.neural.EntradaSimples;
 import br.com.vanhoz.ricardo.trabalho.milton.neural.Linha;
 import br.com.vanhoz.ricardo.trabalho.milton.neural.Neuronio;
 import br.com.vanhoz.ricardo.trabalho.milton.neural.Rede;
+import br.com.vanhoz.ricardo.trabalho.milton.tela.Logger;
 
 public class TreinadorRede {
 
@@ -14,7 +15,14 @@ public class TreinadorRede {
 	
 	private Rede rede;
 	private double[][] pesos;
-	
+        
+        private Logger logger;
+
+       	public TreinadorRede(Logger logger, int linhas, double[][] pesos, int... neuroniosLinha) {
+            this(linhas, pesos, neuroniosLinha);
+            this.logger = logger;
+        }
+
 	public TreinadorRede(int linhas, double[][] pesos, int... neuroniosLinha) {
 		this.rede = new Rede(linhas, neuroniosLinha);
 		this.pesos = pesos;
@@ -41,10 +49,13 @@ public class TreinadorRede {
 			}
 			tc.stop();
 			if (DEBUG) {
-				System.out.println("Tempo decorrido na iteração de 1000 processos: "+tc.getTime()+"ms");
-				System.out.println("Tempo decorrido na iteração de 1000 backpropagation: "+backPropTime+"ms");
+                            if (logger != null) {
+				logger.log("Tempo decorrido na iteração de 1000 processos: "+tc.getTime()+"ms");
+				logger.log("Tempo decorrido na iteração de 1000 backpropagation: "+backPropTime+"ms");
+                            }
 			}
-			System.out.println(err);
+                        if (logger != null)
+                            logger.log(String.valueOf(err));
 		}
 		rede.updatePesos();
 		return rede.getPesos();

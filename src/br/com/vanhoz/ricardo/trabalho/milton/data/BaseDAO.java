@@ -135,5 +135,9 @@ public class BaseDAO {
 		}
 
 	}
+        
+        public void update() {
+            init();
+        }
 
 }
