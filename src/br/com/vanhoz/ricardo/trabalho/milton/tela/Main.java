@@ -333,7 +333,7 @@ public class Main extends javax.swing.JFrame {
                 logger.log("Obtidos " + entries.length + " entradas para treinamento");
                 logger.log(Arrays.toString(entries[0]));
 
-                TreinadorRede rede = new TreinadorRede(logger, 3, new double[14][35], 31, 10, 4);
+                TreinadorRede rede = new TreinadorRede(logger, 3, 31, 10, 4);
                 int ciclos = Integer.parseInt(txtCiclos.getText());
                 double[][] result = rede.train(entries, ciclos);
 

@@ -18,17 +18,39 @@ public class TreinadorRede {
         
         private Logger logger;
 
-       	public TreinadorRede(Logger logger, int linhas, double[][] pesos, int... neuroniosLinha) {
+       	public TreinadorRede(Logger logger, int linhas, int... neuroniosLinha) {
+            this(linhas, neuroniosLinha);
+            this.logger = logger;
+        }
+
+  	public TreinadorRede(Logger logger, int linhas, double[][] pesos, int... neuroniosLinha) {
             this(linhas, pesos, neuroniosLinha);
             this.logger = logger;
         }
 
+	public TreinadorRede(int linhas, int... neuroniosLinha) {
+            this.rede = new Rede(linhas, neuroniosLinha);
+            this.pesos = initPesos(linhas, neuroniosLinha);
+            randomize();
+            rede.loadPesos(this.pesos);
+	}
+
 	public TreinadorRede(int linhas, double[][] pesos, int... neuroniosLinha) {
 		this.rede = new Rede(linhas, neuroniosLinha);
-		this.pesos = pesos;
-		randomize();
+                this.pesos = pesos;
 		rede.loadPesos(this.pesos);
 	}
+
+        private double[][] initPesos(int linhas, int... neuroniosLinha) {
+            logger.log("init");
+            int a1 = 0;
+            int a2 = neuroniosLinha[0] + neuroniosLinha[linhas-1];
+            for (int i=1;i<linhas-1;i++) {
+                a1 += neuroniosLinha[i]+(i < (linhas-1) ? 1 : 0);
+            }
+            logger.log("fim");
+            return new double[a1][a2];
+        }
 	
 	public double[][] train(double[][] e) {
 		return train(e, 1000);

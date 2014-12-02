@@ -35,7 +35,7 @@ public class TestTrainNet {
 		System.out.println("Obtidos "+entries.length+" entradas para treinamento");
 		System.out.println(Arrays.toString(entries[0]));
 		
-		TreinadorRede rede = new TreinadorRede(3, new double[14][35], 31,10,4);
+		TreinadorRede rede = new TreinadorRede(3, 31,10,4);
 		double[][] result = rede.train(entries, 1000);
 		
 		for (double[] d : result) {
